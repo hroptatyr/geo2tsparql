@@ -39,4 +39,28 @@
 #endif	/* HAVE_CONFIG_H */
 #include "range.h"
 
+
+echs_idrng_t
+echs_range_diff(echs_range_t rng, echs_instant_t rel)
+{
+/* for ranges we slightly employ different semantics,
+ * BEG's all day starts at midnight, while END's all day ends at 24:00 */
+	if (rng.beg.H == ECHS_ALL_DAY) {
+		rng.beg.H = 0, rng.beg.M = 0, rng.beg.S = 0, rng.beg.ms = 0;
+	} else if (rng.beg.ms == ECHS_ALL_SEC) {
+		rng.beg.ms = 0;
+	}
+	return (echs_idrng_t){
+		echs_instant_diff(rng.beg, rel),
+			echs_instant_diff(rng.end, rel)};
+}
+
+echs_range_t
+echs_range_add(echs_idrng_t idr, echs_instant_t rel)
+{
+	return (echs_range_t){
+		echs_instant_add(rel, idr.lower),
+			echs_instant_add(rel, idr.upper)};
+}
+
 /* range.c ends here */
