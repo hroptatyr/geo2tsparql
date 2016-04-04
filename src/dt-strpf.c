@@ -352,7 +352,7 @@ dt_strp(const char *str, char **on, size_t len)
 	}
 
 	/* millisecond part */
-	for (tmp = 100U; tmp < 100000U && (uint8_t)(*sp ^ '0') < 10U; sp++) {
+	for (tmp = 100U; (uint8_t)(*++sp ^ '0') < 10U && tmp < 100000U;) {
 		tmp *= 10U;
 		tmp += *sp ^ '0';
 	}
