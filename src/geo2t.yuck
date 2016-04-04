@@ -1,0 +1,3 @@
+Usage: geo2t
+
+Convert WKT geometries to time and vice versa.

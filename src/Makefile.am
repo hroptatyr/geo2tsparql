@@ -20,6 +20,17 @@ SUFFIXES =
 CLEANFILES += version.c
 EXTRA_DIST += version.c.in
 
+bin_PROGRAMS += geo2t
+geo2t_SOURCES = geo2t.c geo2t.yuck
+geo2t_SOURCES += instant.c instant.h
+geo2t_SOURCES += range.c range.h
+geo2t_SOURCES += dt-strpf.c dt-strpf.h
+geo2t_SOURCES += boobs.h
+geo2t_SOURCES += version.c version.h
+geo2t_CPPFLAGS = $(AM_CPPFLAGS)
+geo2t_CPPFLAGS += -D_GNU_SOURCE
+BUILT_SOURCES += geo2t.yucc
+
 
 ## version rules
 version.c: version.c.in $(top_builddir)/.version
