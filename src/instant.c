@@ -147,7 +147,7 @@ echs_instant_diff(echs_instant_t end, echs_instant_t beg)
 
 	if (end.H == ECHS_ALL_DAY) {
 		end.H = 24U, end.M = 0, end.S = 0, end.ms = 0;
-	} else if (end.ms = ECHS_ALL_SEC) {
+	} else if (end.ms == ECHS_ALL_SEC) {
 		end.ms = 1000;
 	}
 	if (beg.H == ECHS_ALL_DAY) {
@@ -168,9 +168,10 @@ echs_instant_diff(echs_instant_t end, echs_instant_t beg)
 	if (intra_df < 0) {
 		intra_df += MSECS_PER_DAY;
 		extra_df = -1;
-	} else if ((unsigned int)intra_df < MSECS_PER_DAY) {
+	} else if (LIKELY((unsigned int)intra_df < MSECS_PER_DAY)) {
 		extra_df = 0;
 	} else {
+		intra_df -= MSECS_PER_DAY;
 		extra_df = 1;
 	}
 
