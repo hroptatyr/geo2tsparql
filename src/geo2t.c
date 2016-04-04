@@ -55,39 +55,95 @@ static const echs_instant_t reftm = {
 	.ms = 0,
 };
 
+#define MAX_GEOFLT	(90. * 128.)
+
 
 /* time and geo magic */
+static inline __attribute__((const, pure)) echs_idiff_t
+geoflt2idiff(double x)
+{
+	double ipart = trunc(x);
+	return (echs_idiff_t){
+		(int32_t)ipart,
+			(uint32_t)((x - ipart) * (double)MSECS_PER_DAY)};
+}
+
+static inline __attribute__((const, pure)) double
+idiff2geoflt(echs_idiff_t x)
+{
+	return (double)x.dpart + (double)x.intra / (double)MSECS_PER_DAY;
+}
+
 static void
 geo2t(double from[static 2U], double to[static 2U])
 {
-	/* scale */
-	from[0U] *= 1000.;
-	from[1U] *= 1000.;
-	to[0U] *= 1000.;
-	to[1U] *= 1000.;
+	echs_idrng_t v;
+	echs_idrng_t s;
+	echs_range_t valid;
+	echs_range_t systm;
+	char buf[256];
+	size_t z = 0U;
 
-	with (double fromd = floor(from[0U])) {
-		printf("%f %f\n", fromd, from[0U] - fromd);
-	}
+	/* scale */
+#if 1
+	from[0U] = scalbn(from[0U], 7);
+	from[1U] = scalbn(from[1U], 7);
+	to[0U] = scalbn(to[0U], 7);
+	to[1U] = scalbn(to[1U], 7);
+#else
+	from[0U] *= 100.;
+	from[1U] *= 100.;
+	to[0U] *= 100.;
+	to[1U] *= 100.;
+#endif
+
+	v = (echs_idrng_t){geoflt2idiff(from[0U]), geoflt2idiff(to[0U])};
+	s.lower = geoflt2idiff(from[1U]);
+	s.upper = to[0U] < MAX_GEOFLT
+		? geoflt2idiff(to[1U]) : echs_max_idiff();
+
+	valid = echs_range_add(v, reftm);
+	systm = echs_range_add(s, reftm);
+
+	memcpy(buf, "BOX2D(", z = 6U);
+	z += range_strf(buf + z, sizeof(buf) - z, valid);
+	buf[z++] = ',';
+	buf[z++] = ' ';
+	z += range_strf(buf + z, sizeof(buf) - z, systm);
+	buf[z++] = ')';
+	buf[z++] = '\n';
+	buf[z] = '\0';
+	fputs(buf, stdout);
 	return;
 }
 
 static void
 t2geo(echs_range_t valid, echs_range_t systm)
 {
-	echs_idiff_t vfrom = echs_instant_diff(valid.beg, reftm);
-	echs_idiff_t vtill = echs_instant_diff(valid.end, reftm);
+	echs_idrng_t v = echs_range_diff(valid, reftm);
+	echs_idrng_t s = echs_range_diff(systm, reftm);
+	double from[2U], to[2U];
 
-	char buf[64];
-	size_t z = 0U;
+	from[0U] = idiff2geoflt(v.lower);
+	to[0U] = idiff2geoflt(v.upper);
+	from[1U] = idiff2geoflt(s.lower);
+	to[1U] = !echs_max_idiff_p(s.upper)
+		? idiff2geoflt(s.upper) : MAX_GEOFLT;
 
-	z += idiff_strf(buf + z, sizeof(buf) - z, vfrom);
-	buf[z++] = '\t';
-	z += idiff_strf(buf + z, sizeof(buf) - z, vtill);
-	buf[z++] = '\n';
-	buf[z] = '\0';
+#if 1
+	from[0U] = scalbn(from[0U], -7);
+	from[1U] = scalbn(from[1U], -7);
+	to[0U] = scalbn(to[0U], -7);
+	to[1U] = scalbn(to[1U], -7);
+#else
+	from[0U] /= 100.;
+	from[1U] /= 100.;
+	to[0U] /= 100.;
+	to[1U] /= 100.;
+#endif
 
-	fputs(buf, stdout);
+	fprintf(stdout, "BOX2D(%.17f %.17f, %.17f %.17f)\n",
+		from[0U], from[1U], to[0U], to[1U]);
 	return;
 }
 
