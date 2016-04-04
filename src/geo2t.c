@@ -45,6 +45,16 @@
 #include "dt-strpf.h"
 #include "nifty.h"
 
+static const echs_instant_t reftm = {
+	.y = 2000,
+	.m = 1,
+	.d = 1,
+	.H = 0,
+	.M = 0,
+	.S = 0,
+	.ms = 0,
+};
+
 
 /* time and geo magic */
 static void
@@ -65,6 +75,19 @@ geo2t(double from[static 2U], double to[static 2U])
 static void
 t2geo(echs_range_t valid, echs_range_t systm)
 {
+	echs_idiff_t vfrom = echs_instant_diff(valid.beg, reftm);
+	echs_idiff_t vtill = echs_instant_diff(valid.end, reftm);
+
+	char buf[64];
+	size_t z = 0U;
+
+	z += idiff_strf(buf + z, sizeof(buf) - z, vfrom);
+	buf[z++] = '\t';
+	z += idiff_strf(buf + z, sizeof(buf) - z, vtill);
+	buf[z++] = '\n';
+	buf[z] = '\0';
+
+	fputs(buf, stdout);
 	return;
 }
 

@@ -41,6 +41,15 @@
 #include <stdint.h>
 #include "boobs.h"
 
+#define HOURS_PER_DAY	(24U)
+#define MINS_PER_HOUR	(60U)
+#define SECS_PER_MIN	(60U)
+#define MSECS_PER_SEC	(1000U)
+#define SECS_PER_DAY	(HOURS_PER_DAY * MINS_PER_HOUR * SECS_PER_MIN)
+#define MSECS_PER_DAY	(SECS_PER_DAY * MSECS_PER_SEC)
+#define DAYS_PER_WEEK	(7U)
+#define DAYS_PER_YEAR	(365U)
+
 typedef struct echs_idiff_s echs_idiff_t;
 typedef union echs_instant_u echs_instant_t;
 
@@ -79,7 +88,8 @@ union echs_instant_u {
 } __attribute__((transparent_union));
 
 struct echs_idiff_s {
-	int64_t d;
+	int32_t dpart;
+	uint32_t intra;
 };
 
 
@@ -196,31 +206,34 @@ echs_nul_idiff(void)
 static inline __attribute__((const, pure)) bool
 echs_nul_idiff_p(echs_idiff_t x)
 {
-	return x.d == 0;
+	return !x.dpart && !x.intra;
 }
 
 static inline __attribute__((const, pure)) bool
 echs_idiff_lt_p(echs_idiff_t i1, echs_idiff_t i2)
 {
-	return i1.d < i2.d;
+	return i1.dpart < i2.dpart ||
+		i1.dpart == i2.dpart && i1.intra < i2.intra;
 }
 
 static inline __attribute__((const, pure)) bool
 echs_idiff_le_p(echs_idiff_t i1, echs_idiff_t i2)
 {
-	return i1.d <= i2.d;
+	return i1.dpart < i2.dpart ||
+		i1.dpart == i2.dpart && i1.intra <= i2.intra;
 }
 
 static inline __attribute__((const, pure)) bool
 echs_idiff_eq_p(echs_idiff_t i1, echs_idiff_t i2)
 {
-	return i1.d == i2.d;
+	return i1.dpart == i2.dpart && i1.intra == i2.intra;
 }
 
 static inline __attribute__((const, pure)) echs_idiff_t
 echs_idiff_neg(echs_idiff_t i)
 {
-	return (echs_idiff_t){-i.d};
+	return (echs_idiff_t){
+		-i.dpart - !!i.intra, !i.intra ? 0U : MSECS_PER_DAY - i.intra};
 }
 
 #endif	/* INCLUDED_instant_h_ */

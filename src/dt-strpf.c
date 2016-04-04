@@ -516,13 +516,13 @@ more_time:
 	}
 
 out:
-	/* make up the idiff object */
-	res.d = dd * MSECS_PER_DAY + msd;
-	/* check for negativity, in reality we don't want negative durations
-	 * in our problem domain, ever.  they make no sense */
-	if (negp) {
+	/* check for negativity */
+	if (!negp) {
+		/* make up the idiff object */
+		res = (echs_idiff_t){dd, msd};
+	} else {
 		/* keep a positive rest and negate the dd field */
-		res.d = -res.d;
+		res = (echs_idiff_t){-dd, msd};
 	}
 
 	if (on != NULL) {
@@ -540,9 +540,9 @@ idiff_strf(char *restrict buf, size_t bsz, echs_idiff_t idiff)
 	if (UNLIKELY(bsz < 4U)) {
 		return 0U;
 	}
-	if (UNLIKELY(idiff.d < 0)) {
+	if (UNLIKELY(idiff.dpart < 0)) {
 		buf[i++] = '-';
-		idiff.d = -idiff.d;
+		idiff.dpart = -idiff.dpart;
 	}
 	buf[i++] = 'P';
 	if (echs_nul_idiff_p(idiff)) {
@@ -550,19 +550,18 @@ idiff_strf(char *restrict buf, size_t bsz, echs_idiff_t idiff)
 		buf[i++] = 'D';
 		goto out;
 	}
-	if ((tmp = idiff.d / MSECS_PER_DAY)) {
-		idiff.d %= MSECS_PER_DAY;
+	if ((tmp = idiff.dpart)) {
 		i += ui32tostr(buf + i, bsz - i, tmp);
 		if (i >= bsz) {
 			goto out;
 		}
 		buf[i++] = 'D';
 	}
-	if (idiff.d && i < bsz) {
+	if (idiff.intra && i < bsz) {
 		buf[i++] = 'T';
 
-		tmp = idiff.d / (60U * 60U * 1000U);
-		idiff.d %= 60U * 60U * 1000U;
+		tmp = idiff.intra / (60U * 60U * 1000U);
+		idiff.intra %= 60U * 60U * 1000U;
 		if (tmp) {
 			i += ui32tostr(buf + i, bsz - i, tmp);
 			if (i >= bsz) {
@@ -571,8 +570,8 @@ idiff_strf(char *restrict buf, size_t bsz, echs_idiff_t idiff)
 			buf[i++] = 'H';
 		}
 
-		tmp = idiff.d / (60U * 1000U);
-		idiff.d %= 60U * 1000U;
+		tmp = idiff.intra / (60U * 1000U);
+		idiff.intra %= 60U * 1000U;
 		if (tmp) {
 			i += ui32tostr(buf + i, bsz - i, tmp);
 			if (i >= bsz) {
@@ -581,8 +580,8 @@ idiff_strf(char *restrict buf, size_t bsz, echs_idiff_t idiff)
 			buf[i++] = 'M';
 		}
 
-		tmp = idiff.d / 1000U;
-		idiff.d %= 1000U;
+		tmp = idiff.intra / 1000U;
+		idiff.intra %= 1000U;
 		if (tmp) {
 			i += ui32tostr(buf + i, bsz - i, tmp);
 			if (i >= bsz) {

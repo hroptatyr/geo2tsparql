@@ -46,15 +46,6 @@ static const unsigned int doy[] = {
 	365U, 396U, 424U, 455U, 485U, 516U, 546U, 577U, 608U, 638U, 669U, 699U,
 };
 
-#define HOURS_PER_DAY	(24U)
-#define MINS_PER_HOUR	(60U)
-#define SECS_PER_MIN	(60U)
-#define MSECS_PER_SEC	(1000U)
-#define SECS_PER_DAY	(HOURS_PER_DAY * MINS_PER_HOUR * SECS_PER_MIN)
-#define MSECS_PER_DAY	(SECS_PER_DAY * MSECS_PER_SEC)
-#define DAYS_PER_WEEK	(7U)
-#define DAYS_PER_YEAR	(365U)
-
 static __attribute__((const, pure)) inline unsigned int
 __get_ndom(unsigned int y, unsigned int m)
 {
@@ -195,15 +186,15 @@ echs_instant_diff(echs_instant_t end, echs_instant_t beg)
 		extra_df += df_y * (int)DAYS_PER_YEAR + (df_y - 1) / 4;
 	}
 
-	return (echs_idiff_t){extra_df * MSECS_PER_DAY + intra_df};
+	return (echs_idiff_t){extra_df, intra_df};
 }
 
 echs_instant_t
 echs_instant_add(echs_instant_t bas, echs_idiff_t add)
 {
 	echs_instant_t res = bas;
-	int dd = add.d / (int)MSECS_PER_DAY;
-	int msd = add.d % (int)MSECS_PER_DAY;
+	int dd = add.dpart;
+	int msd = add.intra;
 	int car, cdr;
 
 	if (UNLIKELY(echs_instant_all_day_p(bas))) {
