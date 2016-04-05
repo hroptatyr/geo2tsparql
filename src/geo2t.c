@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
+#include <time.h>
 #include "dt-strpf.h"
 #include "nifty.h"
 
@@ -54,6 +55,7 @@ static const echs_instant_t reftm = {
 	.S = 0,
 	.ms = 0,
 };
+static const time_t reftm_time = 946684800/*2000-01-01Z*/;
 
 #define MAX_GEOFLT	(90. * 128.)
 
@@ -72,6 +74,18 @@ static inline __attribute__((const, pure)) double
 idiff2geoflt(echs_idiff_t x)
 {
 	return (double)x.dpart + (double)x.intra / (double)MSECS_PER_DAY;
+}
+
+static echs_idrng_t
+current_idrng(void)
+{
+	/* second precision ought to be good enough */
+	time_t now = time(NULL) - reftm_time;
+	echs_idiff_t low = {
+		.dpart = now / 86400,
+		.intra = (now % 86400) * MSECS_PER_SEC,
+	};
+	return (echs_idrng_t){low, echs_max_idiff()};
 }
 
 static void
@@ -121,7 +135,8 @@ static void
 t2geo(echs_range_t valid, echs_range_t systm)
 {
 	echs_idrng_t v = echs_range_diff(valid, reftm);
-	echs_idrng_t s = echs_range_diff(systm, reftm);
+	echs_idrng_t s = echs_nul_instant_p(systm.beg)
+		? current_idrng() : echs_range_diff(systm, reftm);
 	double from[2U], to[2U];
 
 	from[0U] = idiff2geoflt(v.lower);
@@ -168,19 +183,26 @@ geo2t_box2d(const char *box, size_t len)
 		}
 
 		/* should be sep'd by comma */
-		if (UNLIKELY(*box++ != ',')) {
+		for (; len && isspace(*box); box++, len--);
+		if (LIKELY(!len)) {
+			/* oooh, we've left out system time haven't we? */
+			systm = (echs_range_t){
+				echs_nul_instant(),
+				echs_max_instant(),
+			};
+		} else if (UNLIKELY(*box++ != ',')) {
 			/* what sort of 2d data is this? */
 			return -1;
-		}
-
-		/* more whitespace */
-		for (; len && isspace(*box); box++, len--);
-		with (char *eo = NULL) {
-			systm = range_strp(box, &eo, len);
-			if (UNLIKELY(eo == NULL)) {
-				return -1;
+		} else {
+			/* more whitespace */
+			for (; len && isspace(*box); box++, len--);
+			with (char *eo = NULL) {
+				systm = range_strp(box, &eo, len);
+				if (UNLIKELY(eo == NULL)) {
+					return -1;
+				}
+				len -= eo - box, box = eo;
 			}
-			len -= eo - box, box = eo;
 		}
 
 		t2geo(valid, systm);
