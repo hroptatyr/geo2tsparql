@@ -112,11 +112,14 @@ geo2t(double from[static 2U], double to[static 2U])
 #endif
 
 	v = (echs_idrng_t){geoflt2idiff(from[0U]), geoflt2idiff(to[0U])};
+	v.upper.dpart -= !v.lower.intra && !v.upper.intra;
 	s.lower = geoflt2idiff(from[1U]);
 	s.upper = to[0U] < MAX_GEOFLT
 		? geoflt2idiff(to[1U]) : echs_max_idiff();
 
 	valid = echs_range_add(v, reftm);
+	valid.beg.H += ECHS_ALL_DAY + (v.lower.intra || v.upper.intra);
+	valid.end.H += ECHS_ALL_DAY + (v.lower.intra || v.upper.intra);
 	systm = echs_range_add(s, reftm);
 
 	memcpy(buf, "BOX2D(", z = 6U);
