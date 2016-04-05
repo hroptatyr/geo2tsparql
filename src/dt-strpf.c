@@ -394,6 +394,7 @@ dt_strf(char *restrict buf, size_t bsz, echs_instant_t inst)
 			bp += ui32tpstr(bp, bz, inst.ms, 3);
 		}
 	}
+	*bp++ = 'Z';
 	*bp = '\0';
 	return bp - buf;
 }
