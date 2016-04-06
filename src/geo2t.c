@@ -58,6 +58,7 @@ static const echs_instant_t reftm = {
 static const time_t reftm_time = 946684800/*2000-01-01Z*/;
 
 #define MAX_GEOFLT	(90. * 128.)
+#define MIN_GEOFLT	(-MAX_GEOFLT)
 
 
 /* time and geo magic */
@@ -65,7 +66,11 @@ static inline __attribute__((const, pure)) echs_idiff_t
 geoflt2idiff(double x)
 {
 	double ipart = trunc(x);
-	return (echs_idiff_t){
+	return ipart <= MIN_GEOFLT
+		? echs_min_idiff()
+		: ipart >= MAX_GEOFLT
+		? echs_max_idiff()
+		: (echs_idiff_t){
 		(int32_t)ipart,
 			(uint32_t)((x - ipart) * (double)MSECS_PER_DAY)};
 }
@@ -73,7 +78,12 @@ geoflt2idiff(double x)
 static inline __attribute__((const, pure)) double
 idiff2geoflt(echs_idiff_t x)
 {
-	return (double)x.dpart + (double)x.intra / (double)MSECS_PER_DAY;
+	double r = (double)x.dpart + (double)x.intra / (double)MSECS_PER_DAY;
+	return r >= MAX_GEOFLT
+		? MAX_GEOFLT
+		: r <= MIN_GEOFLT
+		? MIN_GEOFLT
+		: r;
 }
 
 static echs_idrng_t
@@ -112,16 +122,14 @@ geo2t(double from[static 2U], double to[static 2U])
 #endif
 
 	v.lower = geoflt2idiff(from[0U]);
-	v.upper = to[0U] < MAX_GEOFLT
-		? geoflt2idiff(to[0U]) : echs_max_idiff();
+	v.upper = geoflt2idiff(to[0U]);
 	v.upper.dpart -=
 		!echs_max_idiff_p(v.upper) && !v.lower.intra && !v.upper.intra;
 	s.lower = geoflt2idiff(from[1U]);
-	s.upper = to[1U] < MAX_GEOFLT
-		? geoflt2idiff(to[1U]) : echs_max_idiff();
-
+	s.upper = geoflt2idiff(to[1U]);
 	valid = echs_range_add(v, reftm);
-	valid.beg.H += ECHS_ALL_DAY + (v.lower.intra || v.upper.intra);
+	valid.beg.H += ECHS_ALL_DAY +
+		(echs_min_idiff_p(v.lower) || v.lower.intra || v.upper.intra);
 	valid.end.H += ECHS_ALL_DAY +
 		(echs_max_idiff_p(v.upper) || v.lower.intra || v.upper.intra);
 	systm = echs_range_add(s, reftm);

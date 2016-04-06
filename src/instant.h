@@ -210,6 +210,19 @@ echs_nul_idiff_p(echs_idiff_t x)
 }
 
 static inline __attribute__((const, pure)) echs_idiff_t
+echs_min_idiff(void)
+{
+	static const echs_idiff_t max = {.dpart = -INT32_MAX};
+	return max;
+}
+
+static inline __attribute__((const, pure)) bool
+echs_min_idiff_p(echs_idiff_t x)
+{
+	return x.dpart <= -INT32_MAX;
+}
+
+static inline __attribute__((const, pure)) echs_idiff_t
 echs_max_idiff(void)
 {
 	static const echs_idiff_t max = {.dpart = INT32_MAX};

@@ -159,6 +159,9 @@ echs_instant_diff(echs_instant_t end, echs_instant_t beg)
 	if (UNLIKELY(echs_max_instant_p(end) || echs_min_instant_p(beg))) {
 		return echs_max_idiff();
 	}
+	if (UNLIKELY(echs_min_instant_p(end) || echs_max_instant_p(beg))) {
+		return echs_min_idiff();
+	}
 
 	if (end.H == ECHS_ALL_DAY) {
 		end.H = 24U, end.M = 0, end.S = 0, end.ms = 0;
@@ -211,11 +214,10 @@ echs_instant_add(echs_instant_t bas, echs_idiff_t add)
 	int msd = add.intra;
 	int car, cdr;
 
-	if (UNLIKELY(echs_max_instant_p(bas))) {
+	if (UNLIKELY(echs_max_instant_p(bas) || echs_max_idiff_p(add))) {
 		return echs_max_instant();
-	} else if (UNLIKELY(echs_max_idiff_p(add))) {
-		return echs_max_instant();
-	} else if (UNLIKELY(echs_min_instant_p(bas))) {
+	}
+	if (UNLIKELY(echs_min_instant_p(bas) || echs_min_idiff_p(add))) {
 		return echs_min_instant();
 	}
 
