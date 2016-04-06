@@ -278,14 +278,24 @@ static int
 geo2t_ln(const char *wkt, size_t len)
 {
 	static const char box[] = "BOX";
-	size_t wi;
+	size_t zpre = 0U;
+	size_t wi = 0U;
+
+	/* allow prefixes */
+	with (const char *wp = memchr(wkt, '\t', len)) {
+		if (wp != NULL) {
+			zpre = ++wp - wkt;
+			wi += zpre;
+		}
+	}
 
 	/* overread whitespace */
-	for (wi = 0U; wi < len && isspace(wkt[wi]); wi++);
+	for (; wi < len && isspace(wkt[wi]); wi++);
 
 	if (UNLIKELY(wi + strlenof(box) >= len)) {
 		return -1;
 	} else if (UNLIKELY(memcmp(wkt + wi, box, strlenof(box)))) {
+		puts("SHIT");
 		return -1;
 	}
 	/* parse the box data */
@@ -310,9 +320,16 @@ geo2t_ln(const char *wkt, size_t len)
 			return -1;
 		}
 		/* just use that box parser now */
-		return geo2t_box2d(wkt + wi, eo - (wkt + wi));
+		if (zpre) {
+			fwrite(wkt, 1, zpre, stdout);
+		}
+		if (UNLIKELY(geo2t_box2d(wkt + wi, eo - (wkt + wi)) < 0)) {
+			if (zpre) {
+				fputc('\n', stdout);
+			}
+			return -1;
+		}
 	}
-	/* shouldn't be reached */
 	return 0;
 }
 
