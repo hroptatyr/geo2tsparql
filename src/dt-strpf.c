@@ -613,10 +613,13 @@ range_strp(const char *str, char **on, size_t len)
 	} else if (*str == '-') {
 		/* ah, lower bound seems to be -infty */
 		r.beg = echs_min_instant();
+		op++;
+		goto strp_end;
 	} else {
 		r.beg = dt_strp(str, &op, len);
 	}
 	switch (*op++) {
+	strp_end:
 	case '/':
 		/* just a normal range then, innit? */
 		r.end = dt_strp(op, on, len - (op - str));
@@ -649,11 +652,15 @@ range_strf(char *restrict str, size_t ssz, echs_range_t r)
 	} else if (UNLIKELY(echs_max_range_p(r))) {
 		str[n++] = '*';
 		goto fin;
-	} else if (!echs_min_instant_p(r.beg)) {
+	} else if (UNLIKELY(echs_min_instant_p(r.beg))) {
+		str[n++] = '-';
+		goto strf_end;
+	} else {
 		n += dt_strf(str, ssz, r.beg);
 	}
 	if (n < ssz && !echs_max_instant_p(r.end)) {
 		str[n++] = '/';
+	strf_end:
 		n += dt_strf(str + n, ssz - n, r.end);
 	} else if (n < ssz) {
 		str[n++] = '+';
