@@ -134,7 +134,7 @@ geo2t(double from[static 2U], double to[static 2U])
 		(echs_max_idiff_p(v.upper) || v.lower.intra || v.upper.intra);
 	systm = echs_range_add(s, reftm);
 
-	memcpy(buf, "BOX2D(", z = 6U);
+	memcpy(buf, "TBOX2D(", z = 6U);
 	z += range_strf(buf + z, sizeof(buf) - z, valid);
 	buf[z++] = ',';
 	buf[z++] = ' ';
@@ -179,98 +179,100 @@ t2geo(echs_range_t valid, echs_range_t systm)
 
 
 static int
-geo2t_box2d(const char *box, size_t len)
+geo2t_tbox2d(const char *box, size_t len)
 {
-	/* it's either dates or geo coords */
-	if (memchr(box, 'Z', len)) {
-		/* dates */
-		echs_range_t valid;
-		echs_range_t systm;
+	/* dates */
+	echs_range_t valid;
+	echs_range_t systm;
 
-		/* read over whitespace */
-		for (; len && isspace(*box); box++, len--);
-		with (char *eo = NULL) {
-			valid = range_strp(box, &eo, len);
-			if (UNLIKELY(eo == NULL)) {
-				return -1;
-			}
-			len -= eo - box, box = eo;
-		}
-
-		/* should be sep'd by comma */
-		for (; len && isspace(*box); box++, len--);
-		if (LIKELY(!len)) {
-			/* oooh, we've left out system time haven't we? */
-			systm = (echs_range_t){
-				echs_nul_instant(),
-				echs_max_instant(),
-			};
-		} else if (UNLIKELY(*box++ != ',')) {
-			/* what sort of 2d data is this? */
+	/* read over whitespace */
+	for (; len && isspace(*box); box++, len--);
+	with (char *eo = NULL) {
+		valid = range_strp(box, &eo, len);
+		if (UNLIKELY(eo == NULL)) {
 			return -1;
-		} else {
-			/* more whitespace */
-			for (; len && isspace(*box); box++, len--);
-			with (char *eo = NULL) {
-				systm = range_strp(box, &eo, len);
-				if (UNLIKELY(eo == NULL)) {
-					return -1;
-				}
-				len -= eo - box, box = eo;
-			}
 		}
+		len -= eo - box, box = eo;
+	}
 
-		t2geo(valid, systm);
+	/* should be sep'd by comma */
+	for (; len && isspace(*box); box++, len--);
+	if (LIKELY(!len)) {
+		/* oooh, we've left out system time haven't we? */
+		systm = (echs_range_t){
+			echs_nul_instant(),
+			echs_max_instant(),
+		};
+	} else if (UNLIKELY(*box++ != ',')) {
+		/* what sort of 2d data is this? */
+		return -1;
 	} else {
-		/* coords */
-		double from[2U];
-		double to[2U];
-
-		/* read over whitespace */
-		for (; len && isspace(*box); box++, len--);
-		with (char *eo = NULL) {
-			from[0U] = strtod(box, &eo);
-			if (UNLIKELY(eo == NULL)) {
-				return -1;
-			}
-			len -= eo - box, box = eo;
-		}
 		/* more whitespace */
 		for (; len && isspace(*box); box++, len--);
 		with (char *eo = NULL) {
-			from[1U] = strtod(box, &eo);
+			systm = range_strp(box, &eo, len);
 			if (UNLIKELY(eo == NULL)) {
 				return -1;
 			}
 			len -= eo - box, box = eo;
 		}
-		/* whitespace */
-		for (; len && isspace(*box); box++, len--);
-		if (UNLIKELY(*box++ != ',')) {
-			/* what sort of 2d data is this? */
+	}
+
+	t2geo(valid, systm);
+	return 0;
+}
+
+static int
+geo2t_box2d(const char *box, size_t len)
+{
+	/* coords */
+	double from[2U];
+	double to[2U];
+
+	/* read over whitespace */
+	for (; len && isspace(*box); box++, len--);
+	with (char *eo = NULL) {
+		from[0U] = strtod(box, &eo);
+		if (UNLIKELY(eo == NULL)) {
 			return -1;
 		}
-
-		for (; len && isspace(*box); box++, len--);
-		with (char *eo = NULL) {
-			to[0U] = strtod(box, &eo);
-			if (UNLIKELY(eo == NULL)) {
-				return -1;
-			}
-			len -= eo - box, box = eo;
-		}
-		/* whitespace */
-		for (; len && isspace(*box); box++, len--);
-		with (char *eo = NULL) {
-			to[1U] = strtod(box, &eo);
-			if (UNLIKELY(eo == NULL)) {
-				return -1;
-			}
-			len -= eo - box, box = eo;
-		}
-
-		geo2t(from, to);
+		len -= eo - box, box = eo;
 	}
+	/* more whitespace */
+	for (; len && isspace(*box); box++, len--);
+	with (char *eo = NULL) {
+		from[1U] = strtod(box, &eo);
+		if (UNLIKELY(eo == NULL)) {
+			return -1;
+		}
+		len -= eo - box, box = eo;
+	}
+	/* whitespace */
+	for (; len && isspace(*box); box++, len--);
+	if (UNLIKELY(*box++ != ',')) {
+		/* what sort of 2d data is this? */
+		return -1;
+	}
+
+	for (; len && isspace(*box); box++, len--);
+	with (char *eo = NULL) {
+		to[0U] = strtod(box, &eo);
+		if (UNLIKELY(eo == NULL)) {
+			return -1;
+		}
+		len -= eo - box, box = eo;
+	}
+	/* whitespace */
+	for (; len && isspace(*box); box++, len--);
+	with (char *eo = NULL) {
+		to[1U] = strtod(box, &eo);
+		if (UNLIKELY(eo == NULL)) {
+			return -1;
+		}
+		len -= eo - box, box = eo;
+	}
+
+	geo2t(from, to);
 	return 0;
 }
 
@@ -278,8 +280,12 @@ static int
 geo2t_ln(const char *wkt, size_t len)
 {
 	static const char box[] = "BOX";
+	static const char tbox[] = "TBOX";
+	unsigned int tboxp;
+	const char *eo;
 	size_t zpre = 0U;
 	size_t wi = 0U;
+	int rc;
 
 	/* allow prefixes */
 	with (const char *wp = memchr(wkt, '\t', len)) {
@@ -292,13 +298,14 @@ geo2t_ln(const char *wkt, size_t len)
 	/* overread whitespace */
 	for (; wi < len && isspace(wkt[wi]); wi++);
 
-	if (UNLIKELY(wi + strlenof(box) >= len)) {
+	if (UNLIKELY(wi + strlenof(tbox) >= len)) {
 		return -1;
-	} else if (UNLIKELY(memcmp(wkt + wi, box, strlenof(box)))) {
+	} else if ((tboxp = 0U, memcmp(wkt + wi, box, strlenof(box))) &&
+		   (tboxp = 1U, memcmp(wkt + wi, tbox, strlenof(tbox)))) {
 		return -1;
 	}
 	/* parse the box data */
-	switch (wkt[wi += strlenof(box)]) {
+	switch (wkt[wi += strlenof(box) + tboxp]) {
 	case '2':
 		if (UNLIKELY(wkt[++wi] != 'D')) {
 			return -1;
@@ -313,23 +320,30 @@ geo2t_ln(const char *wkt, size_t len)
 	default:
 		return -1;
 	}
-	with (const char *eo = memchr(wkt + wi, ')', len - wi)) {
-		if (UNLIKELY(eo == NULL)) {
-			/* it's not even a matching pair of parens */
-			return -1;
-		}
-		/* just use that box parser now */
-		if (zpre) {
-			fwrite(wkt, 1, zpre, stdout);
-		}
-		if (UNLIKELY(geo2t_box2d(wkt + wi, eo - (wkt + wi)) < 0)) {
-			if (zpre) {
-				fputc('\n', stdout);
-			}
-			return -1;
-		}
+
+	if (UNLIKELY((eo = memchr(wkt + wi, ')', len - wi)) == NULL)) {
+		/* it's not even a matching pair of parens */
+		return -1;
 	}
-	return 0;
+	/* just use that box parser now */
+	if (zpre) {
+		fwrite(wkt, 1, zpre, stdout);
+	}
+	switch (tboxp) {
+	case 0U:
+		/* geospatial data */
+		rc = geo2t_box2d(wkt + wi, eo - (wkt + wi));
+		break;
+	case 1U:
+		rc = geo2t_tbox2d(wkt + wi, eo - (wkt + wi));
+		break;
+	}
+	/* those routines print stuff themselves, unless there was an error */
+	if (UNLIKELY(rc < 0)) {
+		/* in which case we finalise the line */
+		fputc('\n', stdout);
+	}
+	return rc;
 }
 
 
