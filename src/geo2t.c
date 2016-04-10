@@ -295,7 +295,6 @@ geo2t_ln(const char *wkt, size_t len)
 	if (UNLIKELY(wi + strlenof(box) >= len)) {
 		return -1;
 	} else if (UNLIKELY(memcmp(wkt + wi, box, strlenof(box)))) {
-		puts("SHIT");
 		return -1;
 	}
 	/* parse the box data */
