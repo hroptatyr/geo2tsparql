@@ -8,9 +8,7 @@ AM_LDFLAGS = $(XCCLDFLAGS)
 
 bin_PROGRAMS =
 noinst_PROGRAMS =
-lib_LTLIBRARIES =
-noinst_LTLIBRARIES =
-pkglib_LTLIBRARIES =
+noinst_LIBRARIES =
 noinst_HEADERS =
 BUILT_SOURCES =
 EXTRA_DIST = $(BUILT_SOURCES)
@@ -20,15 +18,19 @@ SUFFIXES =
 CLEANFILES += version.c
 EXTRA_DIST += version.c.in
 
+noinst_LIBRARIES += libgeo2t.a
+libgeo2t_a_SOURCES =
+libgeo2t_a_SOURCES += instant.c instant.h
+libgeo2t_a_SOURCES += range.c range.h
+libgeo2t_a_SOURCES += dt-strpf.c dt-strpf.h
+libgeo2t_a_SOURCES += boobs.h
+libgeo2t_a_SOURCES += version.c version.h
+
 bin_PROGRAMS += geo2t
 geo2t_SOURCES = geo2t.c geo2t.yuck
-geo2t_SOURCES += instant.c instant.h
-geo2t_SOURCES += range.c range.h
-geo2t_SOURCES += dt-strpf.c dt-strpf.h
-geo2t_SOURCES += boobs.h
-geo2t_SOURCES += version.c version.h
 geo2t_CPPFLAGS = $(AM_CPPFLAGS)
 geo2t_CPPFLAGS += -D_GNU_SOURCE
+geo2t_LDADD = libgeo2t.a
 BUILT_SOURCES += geo2t.yucc
 
 
