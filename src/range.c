@@ -38,6 +38,7 @@
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
 #include "range.h"
+#include "nifty.h"
 
 
 static echs_range_t
@@ -48,7 +49,9 @@ _range_unfix(echs_range_t r)
 	} else if (r.beg.ms == ECHS_ALL_SEC) {
 		r.beg.ms = 0;
 	}
-	if (r.end.H == ECHS_ALL_DAY) {
+	if (UNLIKELY(echs_max_instant_p(r.end))) {
+		return r;
+	} else if (r.end.H == ECHS_ALL_DAY) {
 		r.end.H = 0, r.end.M = 0, r.end.S = 0, r.end.ms = 0;
 		r.end.d++;
 	} else if (r.end.ms == ECHS_ALL_SEC) {
@@ -68,6 +71,9 @@ _range_fixup(echs_range_t r)
 
 	if (r.end.H == ECHS_ALL_DAY) {
 		r.end = echs_instant_add(r.end, (echs_idiff_t){-1});
+	}
+	if (UNLIKELY(echs_instant_lt_p(r.end, r.beg))) {
+		r = echs_max_range();
 	}
 	return r;
 }
