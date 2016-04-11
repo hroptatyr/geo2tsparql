@@ -20,4 +20,8 @@ batch_tests =
 check_PROGRAMS =
 CLEANFILES = $(check_PROGRAMS)
 
+## summon our helper
+include clitoris.am
+AM_CLIT_LOG_FLAGS = --builddir $(builddir) --verbose
+
 ## Makefile.am ends here
