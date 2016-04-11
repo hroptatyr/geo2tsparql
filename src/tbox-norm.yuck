@@ -1,0 +1,3 @@
+Usage: tbox-norm < FILE
+
+Normalise connected time intervals.
