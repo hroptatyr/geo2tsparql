@@ -63,4 +63,17 @@ echs_range_add(echs_idrng_t idr, echs_instant_t rel)
 			echs_instant_add(rel, idr.upper)};
 }
 
+echs_range_t
+echs_range_coalesce(echs_range_t r1, echs_range_t r2)
+{
+	if (echs_instant_le_p(r1.end, r2.end) &&
+	    echs_instant_le_p(r2.beg, r1.end)) {
+		return (echs_range_t){r1.beg, r2.end};
+	} else if (echs_instant_lt_p(r2.end, r1.end) &&
+		   echs_instant_le_p(r1.beg, r2.end)) {
+		return (echs_range_t){r2.beg, r1.end};
+	}
+	return echs_nul_range();
+}
+
 /* range.c ends here */
