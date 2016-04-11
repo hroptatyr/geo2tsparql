@@ -33,6 +33,13 @@ geo2t_CPPFLAGS += -D_GNU_SOURCE
 geo2t_LDADD = libgeo2t.a
 BUILT_SOURCES += geo2t.yucc
 
+noinst_PROGRAMS += tbox-norm
+tbox_norm_SOURCES = tbox-norm.c tbox-norm.yuck
+tbox_norm_CPPFLAGS = $(AM_CPPFLAGS)
+tbox_norm_CPPFLAGS += -D_GNU_SOURCE
+tbox_norm_LDADD = libgeo2t.a
+BUILT_SOURCES += tbox-norm.yucc
+
 
 ## version rules
 version.c: version.c.in $(top_builddir)/.version

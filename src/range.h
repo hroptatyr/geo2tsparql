@@ -60,6 +60,10 @@ extern echs_idrng_t echs_range_diff(echs_range_t rng, echs_instant_t rel);
  * Return the range when REL is added to an idiff range IDR. */
 extern echs_range_t echs_range_add(echs_idrng_t idr, echs_instant_t rel);
 
+/**
+ * Coalesce two ranges into one, or return the nul range if not possible. */
+extern echs_range_t echs_range_coalesce(echs_range_t, echs_range_t);
+
 
 static inline __attribute__((const, pure)) echs_idiff_t
 echs_range_dur(echs_range_t r)
