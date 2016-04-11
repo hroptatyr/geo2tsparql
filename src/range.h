@@ -64,6 +64,14 @@ extern echs_range_t echs_range_add(echs_idrng_t idr, echs_instant_t rel);
  * Coalesce two ranges into one, or return the nul range if not possible. */
 extern echs_range_t echs_range_coalesce(echs_range_t, echs_range_t);
 
+/**
+ * Turn all-day and all-sec ranges into actual time ranges. */
+extern echs_range_t echs_range_unfix(echs_range_t r);
+
+/**
+ * Treat ranges that start and end on midnight as all-days ranges. */
+extern echs_range_t echs_range_fixup(echs_range_t r);
+
 
 static inline __attribute__((const, pure)) echs_idiff_t
 echs_range_dur(echs_range_t r)
