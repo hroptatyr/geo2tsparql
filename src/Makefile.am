@@ -24,6 +24,7 @@ libgeo2t_a_SOURCES += instant.c instant.h
 libgeo2t_a_SOURCES += range.c range.h
 libgeo2t_a_SOURCES += dt-strpf.c dt-strpf.h
 libgeo2t_a_SOURCES += boobs.h
+libgeo2t_a_SOURCES += nifty.h
 libgeo2t_a_SOURCES += version.c version.h
 
 bin_PROGRAMS += geo2t
