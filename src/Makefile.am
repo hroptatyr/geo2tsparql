@@ -30,14 +30,14 @@ bin_PROGRAMS += geo2t
 geo2t_SOURCES = geo2t.c geo2t.yuck
 geo2t_CPPFLAGS = $(AM_CPPFLAGS)
 geo2t_CPPFLAGS += -D_GNU_SOURCE
-geo2t_LDADD = libgeo2t.a
+geo2t_LDADD = libgeo2t.a -lm
 BUILT_SOURCES += geo2t.yucc
 
 noinst_PROGRAMS += tbox-norm
 tbox_norm_SOURCES = tbox-norm.c tbox-norm.yuck
 tbox_norm_CPPFLAGS = $(AM_CPPFLAGS)
 tbox_norm_CPPFLAGS += -D_GNU_SOURCE
-tbox_norm_LDADD = libgeo2t.a
+tbox_norm_LDADD = libgeo2t.a -lm
 BUILT_SOURCES += tbox-norm.yucc
 
 
