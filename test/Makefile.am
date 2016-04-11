@@ -22,6 +22,26 @@ CLEANFILES = $(check_PROGRAMS)
 
 ## summon our helper
 include clitoris.am
-AM_CLIT_LOG_FLAGS = --builddir $(builddir) --verbose
+AM_CLIT_LOG_FLAGS = --builddir "$(top_builddir)/src" --verbose
+
+TESTS += $(cli_tests)
+cli_tests =
+
+cli_tests += norm_01.clit
+cli_tests += norm_02.clit
+cli_tests += norm_03.clit
+cli_tests += norm_04.clit
+cli_tests += norm_05.clit
+cli_tests += norm_06.clit
+cli_tests += norm_07.clit
+cli_tests += norm_08.clit
+cli_tests += norm_09.clit
+cli_tests += norm_10.clit
+cli_tests += norm_11.clit
+cli_tests += norm_12.clit
+cli_tests += norm_13.clit
+cli_tests += norm_14.clit
+cli_tests += norm_15.clit
+cli_tests += norm_16.clit
 
 ## Makefile.am ends here
