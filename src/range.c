@@ -40,6 +40,39 @@
 #include "range.h"
 
 
+static echs_range_t
+_range_unfix(echs_range_t r)
+{
+	if (r.beg.H == ECHS_ALL_DAY) {
+		r.beg.H = 0, r.beg.M = 0, r.beg.S = 0, r.beg.ms = 0;
+	} else if (r.beg.ms == ECHS_ALL_SEC) {
+		r.beg.ms = 0;
+	}
+	if (r.end.H == ECHS_ALL_DAY) {
+		r.end.H = 0, r.end.M = 0, r.end.S = 0, r.end.ms = 0;
+		r.end.d++;
+	} else if (r.end.ms == ECHS_ALL_SEC) {
+		r.end.S++;
+	}
+	r.end = echs_instant_fixup(r.end);
+	return r;
+}
+
+static echs_range_t
+_range_fixup(echs_range_t r)
+{
+	r.beg.H += ECHS_ALL_DAY +
+		(echs_min_instant_p(r.beg) || r.beg.H || r.end.H);
+	r.end.H += ECHS_ALL_DAY +
+		(echs_max_instant_p(r.end) || r.beg.H || r.end.H);
+
+	if (r.end.H == ECHS_ALL_DAY) {
+		r.end = echs_instant_add(r.end, (echs_idiff_t){-1});
+	}
+	return r;
+}
+
+
 echs_idrng_t
 echs_range_diff(echs_range_t rng, echs_instant_t rel)
 {
@@ -66,14 +99,21 @@ echs_range_add(echs_idrng_t idr, echs_instant_t rel)
 echs_range_t
 echs_range_coalesce(echs_range_t r1, echs_range_t r2)
 {
+	echs_range_t r;
+
+	r1 = _range_unfix(r1);
+	r2 = _range_unfix(r2);
 	if (echs_instant_le_p(r1.end, r2.end) &&
 	    echs_instant_le_p(r2.beg, r1.end)) {
-		return (echs_range_t){r1.beg, r2.end};
+		r = (echs_range_t){r1.beg, r2.end};
 	} else if (echs_instant_lt_p(r2.end, r1.end) &&
 		   echs_instant_le_p(r1.beg, r2.end)) {
-		return (echs_range_t){r2.beg, r1.end};
+		r = (echs_range_t){r2.beg, r1.end};
+	} else {
+		/* no need fixing up a nul-range is there */
+		return echs_nul_range();
 	}
-	return echs_nul_range();
+	return _range_fixup(r);
 }
 
 /* range.c ends here */
