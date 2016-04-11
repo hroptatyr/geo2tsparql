@@ -40,8 +40,8 @@
 #include "range.h"
 
 
-static echs_range_t
-_range_unfix(echs_range_t r)
+echs_range_t
+echs_range_unfix(echs_range_t r)
 {
 	if (r.beg.H == ECHS_ALL_DAY) {
 		r.beg.H = 0, r.beg.M = 0, r.beg.S = 0, r.beg.ms = 0;
@@ -52,27 +52,45 @@ _range_unfix(echs_range_t r)
 		r.end.H = 0, r.end.M = 0, r.end.S = 0, r.end.ms = 0;
 		r.end.d++;
 	} else if (r.end.ms == ECHS_ALL_SEC) {
+		r.end.ms = 0;
 		r.end.S++;
 	}
 	r.end = echs_instant_fixup(r.end);
 	return r;
 }
 
-static echs_range_t
-_range_fixup(echs_range_t r)
+echs_range_t
+echs_range_fixup(echs_range_t r)
 {
-	r.beg.H += ECHS_ALL_DAY +
-		(echs_min_instant_p(r.beg) || r.beg.H || r.end.H);
-	r.end.H += ECHS_ALL_DAY +
-		(echs_max_instant_p(r.end) || r.beg.H || r.end.H);
+	unsigned int begfixH =
+		(echs_min_instant_p(r.beg) || r.beg.H ||
+		 r.end.H && r.end.H < HOURS_PER_DAY);
+	unsigned int endfixH =
+		(echs_max_instant_p(r.end) || r.end.H ||
+		 r.beg.H && r.beg.H < HOURS_PER_DAY);
+	unsigned int begfixms =
+		(echs_min_instant_p(r.beg) || r.beg.ms ||
+		 r.end.ms && r.end.ms < MSECS_PER_SEC);
+	unsigned int endfixms =
+		(echs_max_instant_p(r.end) || r.end.ms ||
+		 r.beg.ms && r.beg.ms < MSECS_PER_SEC);
 
-	if (r.end.H == ECHS_ALL_DAY) {
+	r.beg.H += ECHS_ALL_DAY + begfixH;
+	r.end.H += ECHS_ALL_DAY + endfixH;
+
+	r.beg.ms += ECHS_ALL_SEC + begfixms;
+	r.end.ms += ECHS_ALL_SEC + endfixms;
+
+	if (!endfixH) {
 		r.end = echs_instant_add(r.end, (echs_idiff_t){-1});
+	} else if (!endfixms) {
+		r.end = echs_instant_add(
+			r.end,
+			(echs_idiff_t){-1, MSECS_PER_DAY - MSECS_PER_SEC});
 	}
 	return r;
 }
 
-
 echs_idrng_t
 echs_range_diff(echs_range_t rng, echs_instant_t rel)
 {
@@ -101,19 +119,16 @@ echs_range_coalesce(echs_range_t r1, echs_range_t r2)
 {
 	echs_range_t r;
 
-	r1 = _range_unfix(r1);
-	r2 = _range_unfix(r2);
 	if (echs_instant_le_p(r1.end, r2.end) &&
 	    echs_instant_le_p(r2.beg, r1.end)) {
 		r = (echs_range_t){r1.beg, r2.end};
-	} else if (echs_instant_lt_p(r2.end, r1.end) &&
+	} else if (echs_instant_le_p(r2.end, r1.end) &&
 		   echs_instant_le_p(r1.beg, r2.end)) {
 		r = (echs_range_t){r2.beg, r1.end};
 	} else {
-		/* no need fixing up a nul-range is there */
-		return echs_nul_range();
+		r = echs_nul_range();
 	}
-	return _range_fixup(r);
+	return r;
 }
 
 /* range.c ends here */

@@ -70,6 +70,8 @@ norm_ln(const char *wkt, size_t len)
 			rc = -1;
 			goto oh;
 		}
+		/* unfix him */
+		last = echs_range_unfix(last);
 		/* also fast forward */
 		wi = eo - wkt;
 		for (; wi < len && isspace(wkt[wi]); wi++);
@@ -84,6 +86,7 @@ norm_ln(const char *wkt, size_t len)
 		if (UNLIKELY(eo == NULL)) {
 			break;
 		}
+		this = echs_range_unfix(this);
 
 		coal = echs_range_coalesce(last, this);
 		if (echs_nul_range_p(coal)) {
@@ -91,6 +94,7 @@ norm_ln(const char *wkt, size_t len)
 			size_t z = zpre;
 
 			buf[0U] = ' ';
+			last = echs_range_fixup(last);
 			z += range_strf(buf + z, sizeof(buf) - z, last);
 			fwrite(buf, 1, z, stdout);
 			last = this;
@@ -106,9 +110,10 @@ norm_ln(const char *wkt, size_t len)
 	/* print what we've got */
 	if (!echs_nul_range_p(last)) {
 		char buf[256U];
-		size_t z = !!zpre;
+		size_t z = zpre;
 
 		buf[0U] = ' ';
+		last = echs_range_fixup(last);
 		z += range_strf(buf + z, sizeof(buf) - z, last);
 		fwrite(buf, 1, z, stdout);
 	}
