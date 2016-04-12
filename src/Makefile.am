@@ -34,7 +34,7 @@ geo2t_CPPFLAGS += -D_GNU_SOURCE
 geo2t_LDADD = libgeo2t.a -lm
 BUILT_SOURCES += geo2t.yucc
 
-noinst_PROGRAMS += tbox-norm
+bin_PROGRAMS += tbox-norm
 tbox_norm_SOURCES = tbox-norm.c tbox-norm.yuck
 tbox_norm_CPPFLAGS = $(AM_CPPFLAGS)
 tbox_norm_CPPFLAGS += -D_GNU_SOURCE
