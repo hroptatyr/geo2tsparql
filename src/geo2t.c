@@ -55,7 +55,6 @@ static const echs_instant_t reftm = {
 	.S = 0,
 	.ms = 0,
 };
-static const time_t reftm_time = 946684800/*2000-01-01Z*/;
 
 #define MAX_GEOFLT	(90. * 128.)
 #define MIN_GEOFLT	(-MAX_GEOFLT)
@@ -73,29 +72,6 @@ geoflt2idiff(double x)
 		: (echs_idiff_t){
 		(int32_t)ipart,
 			(uint32_t)((x - ipart) * (double)MSECS_PER_DAY)};
-}
-
-static inline __attribute__((const, pure)) double
-idiff2geoflt(echs_idiff_t x)
-{
-	double r = (double)x.dpart + (double)x.intra / (double)MSECS_PER_DAY;
-	return r >= MAX_GEOFLT
-		? MAX_GEOFLT
-		: r <= MIN_GEOFLT
-		? MIN_GEOFLT
-		: r;
-}
-
-static echs_idrng_t
-current_idrng(void)
-{
-	/* second precision ought to be good enough */
-	time_t now = time(NULL) - reftm_time;
-	echs_idiff_t low = {
-		.dpart = now / 86400,
-		.intra = (now % 86400) * MSECS_PER_SEC,
-	};
-	return (echs_idrng_t){low, echs_max_idiff()};
 }
 
 static void
@@ -134,94 +110,16 @@ geo2t(double from[static 2U], double to[static 2U])
 		(echs_max_idiff_p(v.upper) || v.lower.intra || v.upper.intra);
 	systm = echs_range_add(s, reftm);
 
-	memcpy(buf, "TBOX2D(", z = 6U);
 	z += range_strf(buf + z, sizeof(buf) - z, valid);
 	buf[z++] = ',';
 	buf[z++] = ' ';
 	z += range_strf(buf + z, sizeof(buf) - z, systm);
-	buf[z++] = ')';
-	buf[z++] = '\n';
 	buf[z] = '\0';
-	fputs(buf, stdout);
-	return;
-}
-
-static void
-t2geo(echs_range_t valid, echs_range_t systm)
-{
-	echs_idrng_t v = echs_range_diff(valid, reftm);
-	echs_idrng_t s = echs_nul_instant_p(systm.beg)
-		? current_idrng() : echs_range_diff(systm, reftm);
-	double from[2U], to[2U];
-
-	from[0U] = idiff2geoflt(v.lower);
-	to[0U] = idiff2geoflt(v.upper);
-	from[1U] = idiff2geoflt(s.lower);
-	to[1U] = !echs_max_idiff_p(s.upper)
-		? idiff2geoflt(s.upper) : MAX_GEOFLT;
-
-#if 1
-	from[0U] = scalbn(from[0U], -7);
-	from[1U] = scalbn(from[1U], -7);
-	to[0U] = scalbn(to[0U], -7);
-	to[1U] = scalbn(to[1U], -7);
-#else
-	from[0U] /= 100.;
-	from[1U] /= 100.;
-	to[0U] /= 100.;
-	to[1U] /= 100.;
-#endif
-
-	fprintf(stdout, "BOX2D(%.17f %.17f, %.17f %.17f)\n",
-		from[0U], from[1U], to[0U], to[1U]);
+	fwrite(buf, 1, z, stdout);
 	return;
 }
 
 
-static int
-geo2t_tbox2d(const char *box, size_t len)
-{
-	/* dates */
-	echs_range_t valid;
-	echs_range_t systm;
-
-	/* read over whitespace */
-	for (; len && isspace(*box); box++, len--);
-	with (char *eo = NULL) {
-		valid = range_strp(box, &eo, len);
-		if (UNLIKELY(eo == NULL)) {
-			return -1;
-		}
-		len -= eo - box, box = eo;
-	}
-
-	/* should be sep'd by comma */
-	for (; len && isspace(*box); box++, len--);
-	if (LIKELY(!len)) {
-		/* oooh, we've left out system time haven't we? */
-		systm = (echs_range_t){
-			echs_nul_instant(),
-			echs_max_instant(),
-		};
-	} else if (UNLIKELY(*box++ != ',')) {
-		/* what sort of 2d data is this? */
-		return -1;
-	} else {
-		/* more whitespace */
-		for (; len && isspace(*box); box++, len--);
-		with (char *eo = NULL) {
-			systm = range_strp(box, &eo, len);
-			if (UNLIKELY(eo == NULL)) {
-				return -1;
-			}
-			len -= eo - box, box = eo;
-		}
-	}
-
-	t2geo(valid, systm);
-	return 0;
-}
-
 static int
 geo2t_box2d(const char *box, size_t len)
 {
@@ -280,69 +178,76 @@ static int
 geo2t_ln(const char *wkt, size_t len)
 {
 	static const char box[] = "BOX";
-	static const char tbox[] = "TBOX";
-	unsigned int tboxp;
-	const char *eo;
-	size_t zpre = 0U;
+	static const char col[] = "GEOMETRYCOLLECTION";
+	size_t ni = 0U;
 	size_t wi = 0U;
-	int rc;
+	int rc = 0;
 
 	/* allow prefixes */
 	with (const char *wp = memchr(wkt, '\t', len)) {
 		if (wp != NULL) {
-			zpre = ++wp - wkt;
-			wi += zpre;
+			wi += ++wp - wkt;
+			fwrite(wkt, 1, wi, stdout);
 		}
 	}
 
-	/* overread whitespace */
-	for (; wi < len && isspace(wkt[wi]); wi++);
-
-	if (UNLIKELY(wi + strlenof(tbox) >= len)) {
-		return -1;
-	} else if ((tboxp = 0U, memcmp(wkt + wi, box, strlenof(box))) &&
-		   (tboxp = 1U, memcmp(wkt + wi, tbox, strlenof(tbox)))) {
-		return -1;
-	}
-	/* parse the box data */
-	switch (wkt[wi += strlenof(box) + tboxp]) {
-	case '2':
-		if (UNLIKELY(wkt[++wi] != 'D')) {
-			return -1;
+	if (wi + strlenof(col) < len && !memcmp(wkt + wi, col, strlenof(col))) {
+		if (UNLIKELY(wkt[wi += strlenof(col)] != '(')) {
+			rc = -1;
+			goto out;
+		} else if (UNLIKELY(wkt[--len] != '\n')) {
+			rc = -1;
+			goto out;
+		} else if (UNLIKELY(wkt[--len] != ')')) {
+			rc = -1;
+			goto out;
 		}
+		/* otherwise it's all good */
 		wi++;
-		/*@fallthrough@*/
-	case '(':
-		wi++;
-		break;
-	case '3':
-		/* 3D times?  Efficacy?  No, not on my watch! */
-	default:
-		return -1;
 	}
+	/* read boxes */
+	while (wi + strlenof(box) < len) {
+		const char *eo;
 
-	if (UNLIKELY((eo = memchr(wkt + wi, ')', len - wi)) == NULL)) {
-		/* it's not even a matching pair of parens */
-		return -1;
-	}
-	/* just use that box parser now */
-	if (zpre) {
-		fwrite(wkt, 1, zpre, stdout);
-	}
-	switch (tboxp) {
-	case 0U:
+		/* overread whitespace and commas */
+		for (; wi < len &&
+			     (isspace(wkt[wi]) || wkt[wi] == ','); wi++, ni++);
+
+		if (memcmp(wkt + wi, box, strlenof(box))) {
+			/* nope, not a box */
+			break;
+		}
+		/* optionally allow 2D */
+		if (wkt[wi += strlenof(box)] == '2') {
+			if (UNLIKELY(wkt[++wi] != 'D')) {
+				rc = -1;
+				break;
+			}
+			wi++;
+		}
+		if (UNLIKELY(wkt[wi++] != '(')) {
+			rc = -1;
+			break;
+		}
+		/* find matching paren */
+		eo = memchr(wkt + wi, ')', len - wi);
+		if (UNLIKELY(eo == NULL)) {
+			/* it's not even a matching pair of parens */
+			rc = -1;
+			break;
+		}
 		/* geospatial data */
-		rc = geo2t_box2d(wkt + wi, eo - (wkt + wi));
-		break;
-	case 1U:
-		rc = geo2t_tbox2d(wkt + wi, eo - (wkt + wi));
-		break;
+		if (ni) {
+			fputc(';', stdout);
+			fputc(' ', stdout);
+		}
+		rc += geo2t_box2d(wkt + wi, eo - (wkt + wi));
+		/* advance wi */
+		wi = ++eo - wkt;
 	}
-	/* those routines print stuff themselves, unless there was an error */
-	if (UNLIKELY(rc < 0)) {
-		/* in which case we finalise the line */
-		fputc('\n', stdout);
-	}
+out:
+	/* in which case we finalise the line */
+	fputc('\n', stdout);
 	return rc;
 }
 

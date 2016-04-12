@@ -1,0 +1,3 @@
+Usage: t2geo
+
+Convert time to WKT geometries.
