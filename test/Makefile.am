@@ -48,4 +48,6 @@ cli_tests += geo2t_01.clit
 cli_tests += geo2t_02.clit
 cli_tests += geo2t_03.clit
 
+cli_tests += t2geo_01.clit
+
 ## Makefile.am ends here
