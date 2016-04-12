@@ -44,4 +44,8 @@ cli_tests += norm_14.clit
 cli_tests += norm_15.clit
 cli_tests += norm_16.clit
 
+cli_tests += geo2t_01.clit
+cli_tests += geo2t_02.clit
+cli_tests += geo2t_03.clit
+
 ## Makefile.am ends here
